@@ -1,0 +1,6 @@
+tags
+put tag by id working but logging 400
+
+products
+put by id working but logging 400
+
