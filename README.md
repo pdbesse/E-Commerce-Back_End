@@ -1,8 +1,8 @@
-# Employee-Tracker
+# Ecommerce-Back-End
 
 ## Description
 
-This app allows the user create, view, and manage a company employee database.
+This app allows the user to view, create, update, and delete categories, products, and tags in an ecommerce database.
 
 ---
 
@@ -20,224 +20,198 @@ This app allows the user create, view, and manage a company employee database.
 
 ## Installation
 
-The files for this program can be downloaded [here](https://github.com/pdbesse/Employee-Tracker/archive/refs/heads/main.zip). 
+The files for this program can be downloaded [here](https://github.com/pdbesse/ecommerce-back-end/archive/refs/heads/main.zip). 
 
 This app requires node.js to be installed. For download and installation instructions, please see [nodejs.org](https://nodejs.org/en/download/).
 
-This app also requires Inquirer and mySQL2 to be installed. To do this, open the terminal and navigate to the extracted folder. Enter: 
+This app also requires Sequelize, Express, Dotenv, and mySQL2 to be installed. To do this, open the terminal and navigate to the extracted folder. Enter: 
 ```
 npm install
 ```
-This will download any modules required for the app to work. Still in the console, enter:
-```
-npm start
-```
-This will launch the program.
+This will download any modules required for the app to work. 
 
-A video walkthrough of the app can be viewed [here](https://www.youtube.com/watch?v=7SKkxWPGjJw).
+A video walkthrough of the app can be viewed [here](https://www.youtube.com/watch?v=QSUMKTmwnF0).
 
 ---
 
 ## Usage
 
-![usage-gif](./assets/usage-gif.gif)
+After downloading the files and installing the required modules, the user should update .env.EXAMPLE with the user's username and password for mysql. The user should then delete '.EXAMPLE' from the file name.
+
+The user should open the mysql shell in the terminal after opening the terminal in the root directory. The user should enter 
+```
+mysql -u 'username' -p
+```
+and press enter. The user will then be prompted to enter the password.
+
+The user should then enter 
+```
+source ./db/schema.sql
+```
+to create the database.
+
+Finally, the user should enter 
+```
+use ecommerce_db;
+```
+to ensure the correct database is being used.
 
 
+After creating the database in the mysql shell, the user should contol+c out of the shell. The user should then enter
+```
+npm run seed
+``` 
+to seed the data into the tables.
+
+Lastly, the user should enter
+```
+npm start
+```
+to start the server. 
+
+The routes can then be tested in Insomnia.
+
+![usage-gif](./assets/ecom-back-end.gif)
 
 ---
 
 ## Code Snippets
 
-Because there was a lot of code for this project, I will highlight three particular functions I'm proud of.
+Because all models and routes are similar, I will be highlighting just the Category model and routes.
+
 ```javascript
-const addEmp = () => {
-    inquirer.prompt([
-        {
-            name: 'first_name',
-            type: 'input',
-            message: "What is your new employee's first name?"
-        },
-        {
-            name: 'last_name',
-            type: 'input',
-            message: "What is your new employee's last name?"
-        },
-        {
-            name: 'title',
-            type: 'rawlist',
-            message: "What is your new employee's title?",
-            choices: roleArr
-        },
-        {
-            name: 'manager_name',
-            type: 'rawlist',
-            message: "Who is your new employee's manager?",
-            choices: empArr
-        }
-    ])
-        .then((response) => {
-            let manID;
-            connection.query(`SELECT * FROM employees`, (err, employees) => {
-                if (err) {
-                    console.error(err);
-                }
-                for (i = 0; i < employees.length; i++) {
-                    if (response.manager_name.includes(employees[i].last_name)) {
-                        manID = employees[i].id;
-                    }
-                }
+const { Model, DataTypes } = require('sequelize');
 
-                let roleID;
-                connection.query(`SELECT * FROM roles`, (err, roles) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                    for (i = 0; i < roles.length; i++) {
-                        if (response.title === roles[i].title) {
-                            roleID = roles[i].id;
-                        }
-                    }
-                    connection.query(`INSERT INTO employees SET ?`, { first_name: response.first_name, last_name: response.last_name, role_id: roleID, manager_id: manID }, (err, res) => {
-                        if (err) {
-                            console.error(err);
-                        } else {
-                            connection.query(`SELECT * from employees`, (err, res) => {
-                                if (err) {
-                                    console.error(err);
-                                } else {
-                                    console.table(res);
-                                    console.log(`New employee added.`)
-                                }
-                            });
-                        };
-                        start();
-                    });
-                })
-            })
-        });
+const sequelize = require('../config/connection.js');
 
-}
+class Category extends Model {}
+
+Category.init(
+  {
+    id: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      primaryKey: true,
+      autoIncrement: true,
+    },
+    category_name: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
+  },
+  {
+    sequelize,
+    timestamps: false,
+    freezeTableName: true,
+    underscored: true,
+    modelName: 'category',
+  }
+);
+
+module.exports = Category;
+
 ```
 
-This is a look at the entire addEmp(). I will break it down below.
+The Category model is given an id as its primary key. This is used as a foreign key for the product model to create an association
 
 ```javascript
-    inquirer.prompt([
-        {
-            name: 'first_name',
-            type: 'input',
-            message: "What is your new employee's first name?"
-        },
-        {
-            name: 'last_name',
-            type: 'input',
-            message: "What is your new employee's last name?"
-        },
-        {
-            name: 'title',
-            type: 'rawlist',
-            message: "What is your new employee's title?",
-            choices: roleArr
-        },
-        {
-            name: 'manager_name',
-            type: 'rawlist',
-            message: "Who is your new employee's manager?",
-            choices: empArr
-        }
-    ])
-```
-
-I wanted the user to be able to choose from the role titles instead of the role ids. I also wanted the user to be able to choose from employee full names instead of ids. The choices for each prompts are returned from the functions.
-
-```javascript
-const genRoleArr = (connection) => {
-    let roleArr = [];
-    connection.query(`SELECT * FROM roles`, (err, roles) => {
-        if (err) {
-            console.error(err);
-        }
-        for (i = 0; i < roles.length; i++) {
-            roleArr.push(roles[i].title);
-        };
+router.get('/', async (req, res) => {
+  try {
+    const categoryData = await Category.findAll({
+      include: [
+        { model: Product }
+      ]
     });
-    return roleArr;
-};
+    res.status(200).json(categoryData);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 ```
 
-This helper function collects all role objects, iterates through them, and pushes each role title to roleArr, which is returned.
+This route returns all categories. Category.findAll() retrieves all Category models and includes the associated product models in the returned JSON data.
 
 ```javascript
-const genEmpArr = (connection) => {
-    let empArr = [];
-    connection.query(`SELECT * FROM employees`, (err, employees) => {
-        if (err) {
-            console.error(err);
-        }
-        for (i = 0; i < employees.length; i++) {
-            empArr.push(employees[i].first_name + " " + employees[i].last_name);
-        };
+router.get('/:id', async (req, res) => {
+  try {
+    const categoryData = await Category.findByPk(req.params.id, {
+      include: [
+        { model: Product }
+      ]
     });
-    return empArr;
-};
+
+    if (!categoryData) {
+      res.status(404).json({ message: 'No category found with that id!' });
+      return;
+    }
+
+    res.status(200).json(categoryData);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});
 
 ```
 
-This helper function collects all employee objects, iterates through them, and pushes each role title to empArr, which is returned.
+This route returns the corresponding Category to a given id. Category.findByPk() takes the req.params.id as an argument and finds the associated Category id (primary key). It includes any associated Product models in the returned JSON data.
 
 ```javascript
-        let manID;
-            connection.query(`SELECT * FROM employees`, (err, employees) => {
-                if (err) {
-                    console.error(err);
-                }
-                for (i = 0; i < employees.length; i++) {
-                    if (response.manager_name.includes(employees[i].last_name)) {
-                        manID = employees[i].id;
-                    }
-                }
-            });
+router.post('/', async (req, res) => {
+  try {
+    const newCategory = await Category.create(req.body);
+    res.status(200).json(newCategory);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+
+});
 ```
 
-This section of the addEmp function selects all employee objects, then uses the manager_name response to see if it includes any last name in an employee object. If it does, it sets manID to equal the id from that employee object. This conversion is required in order to successfully enter the new employee into the employees table.
+This route creates a new Category in the database. Category.create() creates the entry in the database using the data provided in the req.body.
 
 ```javascript
-            let roleID;
-                connection.query(`SELECT * FROM roles`, (err, roles) => {
-                    if (err) {
-                        console.error(err);
-                    }
-                    for (i = 0; i < roles.length; i++) {
-                        if (response.title === roles[i].title) {
-                            roleID = roles[i].id;
-                        }
-                    }
-                });
+router.put('/:id', async (req, res) => {
+  try {
+    const categoryData = await Category.update(req.body, {
+      where: {
+        id: req.params.id,
+      }
+    });
+    if (!categoryData) {
+      res.status(400).json({ message: 'No category found with this id!' });
+      return;
+    }
+    res.status(200).json(categoryData);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});       
 ```
 
-This section of the addEmp function selects all role objects, then sets iterates through them. If the title response equals a title in a role object, roleID is set to equal that object's role_id. This conversion is required in order to successfully insert the new employee into the employees table.
+This route updates a category corresponding to a given id. Category.update() takes the req.body as an argument and updates the data where the Category id matches the req.params.id.
 
 ```javascript
-connection.query(`INSERT INTO employees SET ?`, { first_name: response.first_name, last_name: response.last_name, role_id: roleID, manager_id: manID }, (err, res) => {
-                        if (err) {
-                            console.error(err);
-                        } else {
-                            connection.query(`SELECT * from employees`, (err, res) => {
-                                if (err) {
-                                    console.error(err);
-                                } else {
-                                    console.table(res);
-                                    console.log(`New employee added.`)
-                                }
-                            });
-                        };
-                        start();
-                    });
+router.delete('/:id', async (req, res) => {
+  try {
+    const categoryData = await Category.destroy({
+      where: {
+        id: req.params.id,
+      },
+    });
+
+    if (!categoryData) {
+      res.status(404).json({ message: 'No category found with that id!' });
+      return;
+    }
+
+    res.status(200).json(categoryData);
+  } catch (err) {
+    res.status(500).json(err);
+  }
+});      
 ```
 
-This section of the addEmp function inserts the response data and the converted manager id and role id into the employees table. If there is no error, it then returns the employees table.
-
-NOTE: the employees table return, and other tables returned after an add______(), were disabled in the submitted code because they were interfering with running through the app. There were issues with tables being cut off while displayed, and the user sometimes had to press an up or down arrow key in order to see the choices. This did not interfere with the overall functionality of the app. Everything works 100% as intended and designed if the tables are returned after an add______().
+This route deletes a category corresponding to a given id. Category.destroy deletes the Category where the Category id matches the req.params.id.
 
 ---
 
@@ -249,33 +223,29 @@ Technology Used:
 * [Visual Studio Code](https://code.visualstudio.com/)
 * [Javascipt](https://www.javascript.com/)
 * [node.js](https://nodejs.org/en/)
-* [inquirer.js](https://www.npmjs.com/package/inquirer)
+* [Sequelize](https://sequelize.org/)
 * [mySQL2](https://www.npmjs.com/package/mysql2)
+* [dotenv](https://www.npmjs.com/package/dotenv)
+* [Express](https://expressjs.com/)
+* [Insomnia](https://docs.insomnia.rest/)
 
 ---
 
 ## Credits
 
-All coding credited to Phillip Besse. Code debugged with Kavya Mandla and Kevin Hernandez.
-
-Websites Referenced:
-* [DigitalOcean - Switch Case](https://www.digitalocean.com/community/tutorials/how-to-use-the-switch-statement-in-javascript)
-* [Inquirer Docs](https://www.educative.io/answers/how-to-use-the-inquirer-node-package)
-* [Educative.io - Switch Case](https://www.educative.io/answers/how-to-use-the-switch-statement-in-javascript)
-* [mysql2](https://www.npmjs.com/package/mysql2)
-* [W3 Schools - SQL PRIMARY KEY](https://www.w3schools.com/sql/sql_primarykey.ASP)
+All coding credited to Phillip Besse.
 
 ---
 
 ## Testing
 
-There are no tests for this app.
+All routes are tested in Insomnia. See video linked above.
 
 ---
 
 ## License
 
-Phillip Besse's Employee Tracker is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
+Phillip Besse's Ecommerce Back End is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).
 
 MIT License
 
