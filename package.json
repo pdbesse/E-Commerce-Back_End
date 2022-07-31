@@ -11,11 +11,15 @@
   },
   "repository": {
     "type": "git",
-    "url": "git@work.github.com:coding-boot-camp/module-13-challenge-orm.git"
+    "url": "git+https://github.com/pdbesse/ecommerce-back-end.git"
   },
   "keywords": [],
   "author": "Phillip Besse",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/pdbesse/ecommerce-back-end/issues"
+  },
+  "homepage": "https://github.com/pdbesse/ecommerce-back-end#readme",
   "devDependencies": {
     "nodemon": "^2.0.19"
   },
